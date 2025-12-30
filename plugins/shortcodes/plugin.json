@@ -1,0 +1,6 @@
+{
+    "name": "Shortcode UI",
+    "description": "Adds rich UI components (Alerts, Buttons, YouTube, Grid) to Markdown.",
+    "author": "Eduardo Nacimiento-García <enacimie@ull.edu.es>",
+    "version": "1.0.0"
+}

@@ -1,0 +1,20 @@
+{
+    "name": "app/secure-cms",
+    "description": "Secure, Encrypted Flat-file CMS",
+    "authors": [
+        {
+            "name": "Eduardo Nacimiento-García",
+            "email": "enacimie@ull.edu.es"
+        }
+    ],
+    "type": "project",
+    "require": {
+        "erusev/parsedown": "^1.7"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}

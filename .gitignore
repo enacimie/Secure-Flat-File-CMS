@@ -1,0 +1,27 @@
+# Dependencies
+/vendor
+
+# System & Config
+key.php
+.env
+.DS_Store
+Thumbs.db
+
+# Storage (User Data & Cache)
+/storage/cache/*
+/storage/config/*
+/storage/content/*
+/storage/history/*
+/storage/media/*
+/storage/messages/*
+
+# Keep directory structure
+!/storage/cache/.gitkeep
+!/storage/config/.gitkeep
+!/storage/content/.gitkeep
+!/storage/history/.gitkeep
+!/storage/media/.gitkeep
+!/storage/messages/.gitkeep
+
+# Logs
+*.log

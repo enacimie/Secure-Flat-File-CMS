@@ -1,0 +1,6 @@
+{
+    "name": "Hello World",
+    "description": "A simple demonstration plugin that adds a footer message.",
+    "author": "Eduardo Nacimiento-García <enacimie@ull.edu.es>",
+    "version": "1.0.0"
+}
