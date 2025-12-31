@@ -29,7 +29,12 @@ class View
         $viewFile = Hook::call('view_file', $viewPath, $view);
         
         if (file_exists($viewFile)) {
+            ob_start();
             require $viewFile;
+            $content = ob_get_clean();
+            
+            // Simple HTML Minification (Remove space between tags)
+            echo preg_replace('/>\s+</', '><', $content);
         } else {
             die("Critical Error: View '$view' not found. Checked theme '$currentTheme' and '$defaultTheme'.");
         }

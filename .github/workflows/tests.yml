@@ -1,0 +1,28 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1'
+        extensions: openssl, mbstring, json
+
+    - name: Install Dependencies
+      run: composer install --prefer-dist --no-progress
+
+    - name: Create Key
+      run: echo "<?php return '12345678901234567890123456789012';" > key.php
+
+    - name: Create Directories
+      run: mkdir -p storage/content storage/config storage/history storage/media storage/messages storage/cache
+
+    - name: Run PHPUnit
+      run: vendor/bin/phpunit

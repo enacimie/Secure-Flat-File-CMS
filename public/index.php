@@ -50,6 +50,7 @@ $router->post('/admin/restore', [$app, 'restore']);
 $router->post('/contact', [$app, 'submitContact']);
 
 // SEO
+$router->get('/robots.txt', [$app, 'robots']);
 $router->get('/sitemap.xml', [$app, 'sitemap']);
 
 // API (Headless)

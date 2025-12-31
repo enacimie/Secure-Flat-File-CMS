@@ -574,17 +574,35 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
     {
         header("Content-Type: application/xml; charset=utf-8");
         echo '<?xml version="1.0" encoding="UTF-8"?>';
-        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">';
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
         $domain = $protocol . $_SERVER['HTTP_HOST'];
         foreach (Indexer::all() as $item) {
             if (($item['status'] ?? 'published') === 'published') {
                 $slug = str_replace('.md', '', $item['file']);
                 $url = $domain . '/' . ($slug === 'home' ? '' : $slug);
-                echo "<url><loc>$url</loc><lastmod>{$item['date']}</lastmod></url>";
+                echo "<url>";
+                echo "<loc>$url</loc>";
+                echo "<lastmod>{$item['date']}</lastmod>";
+                if (!empty($item['image'])) {
+                    // Fix relative URLs if necessary, mostly they are absolute or /media/...
+                    $imgUrl = str_starts_with($item['image'], 'http') ? $item['image'] : $domain . $item['image'];
+                    echo "<image:image><image:loc>" . htmlspecialchars($imgUrl) . "</image:loc></image:image>";
+                }
+                echo "</url>";
             }
         }
         echo '</urlset>';
+    }
+
+    public function robots()
+    {
+        header('Content-Type: text/plain');
+        echo "User-agent: *\n";
+        echo "Disallow: /admin/\n";
+        echo "Disallow: /storage/\n";
+        echo "Disallow: /search\n";
+        echo "Sitemap: " . ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://") . $_SERVER['HTTP_HOST'] . "/sitemap.xml";
     }
 
     public function api($slug)

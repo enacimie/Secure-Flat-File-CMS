@@ -1,0 +1,1 @@
+{"version":1,"defects":{"SecurityTest::testDecryptionFailsWithTamperedData":3},"times":{"SecurityTest::testEncryptionAndDecryption":0.003,"SecurityTest::testDecryptionFailsWithTamperedData":0}}
