@@ -474,13 +474,32 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
         header('Location: /admin/extensions');
     }
 
+    public function contactPage()
+    {
+        View::render('contact', [
+            'title' => 'Contact Us',
+            'site' => $this->config,
+            'is_admin' => Auth::check(),
+            'csrf' => Security::generateCsrfToken()
+        ], $this->config);
+    }
+
     public function submitContact()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Method");
-        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF");
+        
+        // Anti-Spam: Honeypot
+        if (!empty($_POST['website_url'])) {
+            // Bot detected. Pretend success.
+            header("Location: /contact?sent=true");
+            exit;
+        }
+
+        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF Error");
+        
         $data = ['date' => date('Y-m-d H:i:s'), 'name' => $_POST['name'], 'email' => $_POST['email'], 'message' => $_POST['message']];
         Store::save('msg_' . time() . '.json', json_encode($data), 'messages');
-        header("Location: " . $_SERVER['HTTP_REFERER'] . "?sent=true");
+        header("Location: /contact?sent=true");
     }
     
     public function inbox()

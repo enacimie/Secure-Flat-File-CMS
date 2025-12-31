@@ -1,0 +1,89 @@
+#!/usr/bin/env php
+<?php
+
+// CLI Tool for Secure Flat-File CMS
+
+if (php_sapi_name() !== 'cli') {
+    die("This script must be run from the command line.\n");
+}
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use App\Core\Store;
+use App\Core\Security;
+
+// Helper to print colored text
+function line($text, $color = '37') {
+    echo "\033[{$color}m{$text}\033[0m\n";
+}
+
+$args = $_SERVER['argv'];
+$command = $args[1] ?? 'help';
+
+echo "\n";
+line("Secure Flat-File CMS - CLI Tool v1.0", '36'); // Cyan
+echo "====================================\n";
+
+switch ($command) {
+    case 'cache:clear':
+        $dir = __DIR__ . '/../storage/cache/public';
+        if (!is_dir($dir)) {
+            line("Cache directory is empty or does not exist.", '33');
+            break;
+        }
+        $files = glob($dir . '/*');
+        foreach ($files as $file) {
+            if (is_file($file)) unlink($file);
+        }
+        line("Public cache cleared (" . count($files) . " files deleted).", '32');
+        break;
+
+    case 'user:reset':
+        $pass = $args[2] ?? null;
+        if (!$pass) {
+            line("Error: Usage: php bin/cms user:reset <new_password>", '31');
+            exit(1);
+        }
+        
+        $json = Store::load('site.json', 'config');
+        if (!$json) {
+            line("Error: site.json not found.", '31');
+            exit(1);
+        }
+        
+        $config = json_decode($json, true);
+        $config['admin_pass'] = password_hash($pass, PASSWORD_DEFAULT);
+        
+        if (Store::save('site.json', json_encode($config, JSON_PRETTY_PRINT), 'config')) {
+            line("Admin password reset successfully.", '32');
+        } else {
+            line("Error saving configuration.", '31');
+        }
+        break;
+
+    case 'security:disable-2fa':
+        $json = Store::load('site.json', 'config');
+        if (!$json) {
+            line("Error: site.json not found.", '31');
+            exit(1);
+        }
+        
+        $config = json_decode($json, true);
+        $config['admin_2fa_secret'] = '';
+        
+        if (Store::save('site.json', json_encode($config, JSON_PRETTY_PRINT), 'config')) {
+            line("Two-Factor Authentication disabled.", '33');
+        } else {
+            line("Error saving configuration.", '31');
+        }
+        break;
+
+    default:
+        line("Available commands:", '37');
+        line("  cache:clear             Clear public HTML cache", '32');
+        line("  user:reset <pass>       Reset admin password", '32');
+        line("  security:disable-2fa    Emergency disable 2FA", '32');
+        break;
+}
+
+echo "\n";

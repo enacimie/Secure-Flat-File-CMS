@@ -47,6 +47,7 @@ $router->get('/admin/history', [$app, 'history']);
 $router->post('/admin/restore', [$app, 'restore']);
 
 // Public Form Submissions
+$router->get('/contact', [$app, 'contactPage']);
 $router->post('/contact', [$app, 'submitContact']);
 
 // SEO

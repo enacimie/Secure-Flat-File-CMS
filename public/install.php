@@ -1,6 +1,12 @@
 <?php
 // Installer for Secure CMS
 
+// Security Check: Prevent re-installation
+if (file_exists(__DIR__ . '/../key.php')) {
+    http_response_code(403);
+    die("<h1>System Locked</h1><p>The system is already installed. To reinstall, you must manually delete <code>key.php</code> from the root directory.</p>");
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $siteName = $_POST['site_name'] ?? 'My Secure CMS';
     $user = $_POST['user'] ?? 'admin';
@@ -68,6 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'footer' => [['type'=>'raw', 'body'=>'<small>&copy; '.date('Y').' '.$siteName.'</small>']]
         ];
         file_put_contents(__DIR__ . '/../storage/config/blocks.json', install_encrypt(json_encode($blocks), $key));
+
+        // 7. Cleanup
+        @unlink(__FILE__); // Self-destruct for security
 
         header('Location: /');
         exit;
