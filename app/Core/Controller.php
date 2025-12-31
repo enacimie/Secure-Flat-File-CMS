@@ -474,32 +474,31 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
         header('Location: /admin/extensions');
     }
 
-    public function contactPage()
-    {
-        View::render('contact', [
-            'title' => 'Contact Us',
-            'site' => $this->config,
-            'is_admin' => Auth::check(),
-            'csrf' => Security::generateCsrfToken()
-        ], $this->config);
-    }
-
     public function submitContact()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Method");
         
         // Anti-Spam: Honeypot
         if (!empty($_POST['website_url'])) {
-            // Bot detected. Pretend success.
-            header("Location: /contact?sent=true");
+            header("Location: " . $_SERVER['HTTP_REFERER'] . "?sent=true");
             exit;
         }
 
         if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF Error");
         
-        $data = ['date' => date('Y-m-d H:i:s'), 'name' => $_POST['name'], 'email' => $_POST['email'], 'message' => $_POST['message']];
-        Store::save('msg_' . time() . '.json', json_encode($data), 'messages');
-        header("Location: /contact?sent=true");
+        // Dynamic Data Capture
+        $data = $_POST;
+        // Clean system fields
+        unset($data['csrf'], $data['website_url']);
+        
+        $data['submitted_at'] = date('Y-m-d H:i:s');
+        $data['ip_address'] = $_SERVER['REMOTE_ADDR'];
+
+        Store::save('msg_' . time() . '.json', json_encode($data, JSON_PRETTY_PRINT), 'messages');
+        
+        // Redirect back to the same page
+        $referer = strtok($_SERVER['HTTP_REFERER'], '?');
+        header("Location: $referer?sent=true");
     }
     
     public function inbox()

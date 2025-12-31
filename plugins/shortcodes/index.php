@@ -209,6 +209,103 @@ Hook::add('content_raw', function($markdown) {
         return "<svg class=\"w-5 h-5 inline-block text-gray-500\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\">{$icons[$name]}</svg>";
     }, $markdown);
 
+    // --- FORM BUILDER (CF7 Killer) ---
+
+    // 15. FORM WRAPPER
+    // Usage: [form]...[/form]
+    $markdown = preg_replace_callback('/\[form(?: class="?(.*?)"?)?\](.*?)\[\/form\]/s', function($matches) {
+        $class = $matches[1] ?? '';
+        $content = trim($matches[2]);
+        $csrf = \App\Core\Security::generateCsrfToken();
+        
+        // Success Message Logic (via JS or PHP session check logic in view)
+        $successMsg = '';
+        if (isset($_GET['sent'])) {
+            $successMsg = '<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4 text-center">Message sent successfully!</div>';
+        }
+
+        return "$successMsg
+                <form action=\"/contact\" method=\"POST\" class=\"$class space-y-4\">
+                    <input type=\"hidden\" name=\"csrf\" value=\"$csrf\">
+                    <div style=\"display:none;\"><input type=\"text\" name=\"website_url\" autocomplete=\"off\"></div>
+                    $content
+                </form>";
+    }, $markdown);
+
+    // 16. INPUT FIELD
+    // Usage: [input type="text" name="email" label="Email" placeholder="..." required="true"]
+    $markdown = preg_replace_callback('/\[input type="?(.*?)"? name="?(.*?)"?(?: label="?(.*?)"?)?(?: placeholder="?(.*?)"?)?(?: required="?(.*?)"?)?\]/', function($matches) {
+        $type = $matches[1] ?? 'text';
+        $name = $matches[2];
+        $label = !empty($matches[3]) ? "<label class=\"block text-sm font-medium text-gray-700 mb-1\">{$matches[3]}</label>" : '';
+        $ph = $matches[4] ?? '';
+        $req = ($matches[5] ?? '') === 'true' ? 'required' : '';
+        
+        return "<div>
+                    $label
+                    <input type=\"$type\" name=\"$name\" placeholder=\"$ph\" $req class=\"shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md\">
+                </div>";
+    }, $markdown);
+
+    // 17. TEXTAREA
+    // Usage: [textarea name="msg" label="Message" rows="4"]
+    $markdown = preg_replace_callback('/\[textarea name="?(.*?)"?(?: label="?(.*?)"?)?(?: rows="?(.*?)"?)?(?: required="?(.*?)"?)?\]/', function($matches) {
+        $name = $matches[1];
+        $label = !empty($matches[2]) ? "<label class=\"block text-sm font-medium text-gray-700 mb-1\">{$matches[2]}</label>" : '';
+        $rows = $matches[3] ?? '4';
+        $req = ($matches[4] ?? '') === 'true' ? 'required' : '';
+
+        return "<div>
+                    $label
+                    <textarea name=\"$name\" rows=\"$rows\" $req class=\"shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md\"></textarea>
+                </div>";
+    }, $markdown);
+
+    // 18. SELECT / DROPDOWN
+    // Usage: [select name="subject" label="Subject" options="General,Support,Sales"]
+    $markdown = preg_replace_callback('/\[select name="?(.*?)"? options="?(.*?)"?(?: label="?(.*?)"?)?\]/', function($matches) {
+        $name = $matches[1];
+        $optsRaw = explode(',', $matches[2]);
+        $label = !empty($matches[3]) ? "<label class=\"block text-sm font-medium text-gray-700 mb-1\">{$matches[3]}</label>" : '';
+        
+        $options = '';
+        foreach ($optsRaw as $opt) {
+            $opt = trim($opt);
+            $options .= "<option value=\"$opt\">$opt</option>";
+        }
+
+        return "<div>
+                    $label
+                    <select name=\"$name\" class=\"mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md\">
+                        $options
+                    </select>
+                </div>";
+    }, $markdown);
+
+    // 19. CHECKBOX
+    // Usage: [checkbox name="terms" label="I agree to terms"]
+    $markdown = preg_replace_callback('/\[checkbox name="?(.*?)"? label="?(.*?)"?\]/', function($matches) {
+        $name = $matches[1];
+        $label = $matches[2];
+        return "<div class=\"flex items-start\">
+                    <div class=\"flex items-center h-5\">
+                        <input name=\"$name\" type=\"checkbox\" class=\"focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded\">
+                    </div>
+                    <div class=\"ml-3 text-sm\">
+                        <label class=\"font-medium text-gray-700\">$label</label>
+                    </div>
+                </div>";
+    }, $markdown);
+
+    // 20. SUBMIT BUTTON
+    // Usage: [submit label="Send Message"]
+    $markdown = preg_replace_callback('/\[submit label="?(.*?)"?\]/', function($matches) {
+        $label = $matches[1] ?? 'Submit';
+        return "<button type=\"submit\" class=\"w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500\">
+                    $label
+                </button>";
+    }, $markdown);
+
     return $markdown;
 });
 
