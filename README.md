@@ -1,6 +1,3 @@
-![Header](./secure-flat-file-cms.png)
-
-
 # Secure Flat-File CMS
 
 A modern, lightweight, and **fully encrypted** Content Management System (CMS) built with PHP. It uses Markdown for content and JSON for configuration, storing all data securely encrypted at rest using **AES-256-GCM**.
@@ -33,9 +30,8 @@ A modern, lightweight, and **fully encrypted** Content Management System (CMS) b
 ## 🛠️ Requirements
 
 *   **PHP 8.1** or higher.
-*   `openssl` extension enabled.
-*   `json` extension enabled.
-*   Write permissions on the `storage/` directory.
+*   Extensions: `openssl`, `json`, `mbstring`.
+*   Web Server: Apache (with mod_rewrite) or Nginx.
 
 ## 📦 Installation
 
@@ -43,8 +39,8 @@ A modern, lightweight, and **fully encrypted** Content Management System (CMS) b
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/yourusername/secure-cms.git
-    cd secure-cms
+    git clone https://github.com/enacimie/Secure-Flat-File-CMS.git
+    cd Secure-Flat-File-CMS
     ```
 
 2.  **Install Dependencies:**
@@ -52,16 +48,68 @@ A modern, lightweight, and **fully encrypted** Content Management System (CMS) b
     composer install
     ```
 
-3.  **Start the Server:**
-    ```bash
-    php -S localhost:8000 -t public public/router.php
-    ```
+3.  **Run the Wizard:**
+    *   **Dev Mode:** Run `php -S localhost:8000 -t public public/router.php` and visit `http://localhost:8000`.
+    *   **Production:** Point your web server to the `public/` directory (see configuration below).
+    *   Follow the on-screen instructions to generate your Encryption Key and Admin Account.
 
-4.  **Run the Wizard:**
-    Open [http://localhost:8000](http://localhost:8000) in your browser.
-    The system will detect the missing configuration and launch the **Secure Installation Wizard**.
-    *   It will generate a cryptographic key (`key.php`).
-    *   It will set up your Admin account.
+---
+
+## 🌐 Web Server Configuration (Production)
+
+For security, the **Document Root** must point to the `public/` folder. This prevents direct access to your encrypted data in `storage/` or code in `app/`.
+
+### Permissions
+Ensure the web server (e.g., `www-data`) has write access to the `storage/` directory and `key.php` (if not yet generated).
+
+```bash
+chown -R www-data:www-data storage/
+chmod -R 755 storage/
+chown www-data:www-data key.php
+```
+
+### Apache
+Ensure `mod_rewrite` is enabled. The system includes a `.htaccess` file in `public/` to handle routing.
+
+**VirtualHost Example:**
+```apache
+<VirtualHost *:80>
+    ServerName example.com
+    DocumentRoot /var/www/secure-cms/public
+
+    <Directory /var/www/secure-cms/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+```
+
+### Nginx
+Use the following configuration block:
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+    root /var/www/secure-cms/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock; # Check your PHP version
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+```
+
+---
 
 ## 📖 Usage Guide
 
