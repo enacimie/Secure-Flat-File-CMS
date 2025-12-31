@@ -1,5 +1,5 @@
 {
-    "name": "app/secure-cms",
+    "name": "enacimie/secure-flat-file-cms",
     "description": "Secure, Encrypted Flat-file CMS",
     "authors": [
         {

@@ -79,13 +79,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Install Secure CMS</title>
+    <title>Install Secure Flat-File CMS</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
 </head>
 <body class="bg-gray-100 h-screen flex items-center justify-center">
     <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
         <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold text-gray-900">Secure CMS Installation</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Secure Flat-File CMS Installation</h1>
             <p class="text-gray-500 text-sm mt-2">Setup your encrypted environment</p>
         </div>
 

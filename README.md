@@ -75,9 +75,9 @@ Ensure `mod_rewrite` is enabled. The system includes a `.htaccess` file in `publ
 ```apache
 <VirtualHost *:80>
     ServerName example.com
-    DocumentRoot /var/www/secure-cms/public
+    DocumentRoot /var/www/secure-flat-file-cms/public
 
-    <Directory /var/www/secure-cms/public>
+    <Directory /var/www/secure-flat-file-cms/public>
         AllowOverride All
         Require all granted
     </Directory>
@@ -91,7 +91,7 @@ Use the following configuration block:
 server {
     listen 80;
     server_name example.com;
-    root /var/www/secure-cms/public;
+    root /var/www/secure-flat-file-cms/public;
     index index.php;
 
     location / {
