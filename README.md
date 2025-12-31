@@ -1,3 +1,5 @@
+![Secure Flat-File CMS](secure-flat-file-cms.png)
+
 # Secure Flat-File CMS
 
 A modern, lightweight, and **fully encrypted** Content Management System (CMS) built with PHP. It uses Markdown for content and JSON for configuration, storing all data securely encrypted at rest using **AES-256-GCM**.

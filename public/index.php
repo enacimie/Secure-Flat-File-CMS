@@ -24,12 +24,16 @@ $router = new Router();
 // Definir Rutas
 $router->get('/', [$app, 'index']);
 
+// Public Search
+$router->get('/search', [$app, 'search']);
+
 // Admin Routes
 $router->get('/admin', [$app, 'admin']);
 $router->post('/admin', [$app, 'admin']); // Para el login
 $router->get('/admin/logout', [$app, 'logout']);
 $router->get('/admin/inbox', [$app, 'inbox']); // New Inbox Route
 $router->get('/admin/extensions', [$app, 'extensions']); // Extensions Manager
+$router->get('/admin/media-library', [$app, 'mediaLibrary']); // Media Library
 $router->post('/admin/extensions/toggle', [$app, 'togglePlugin']);
 $router->post('/admin/extensions/theme', [$app, 'setTheme']);
 $router->post('/admin/upload', [$app, 'upload']); // Media Upload

@@ -22,6 +22,8 @@ Thumbs.db
 !/storage/history/.gitkeep
 !/storage/media/.gitkeep
 !/storage/messages/.gitkeep
+!/storage/.htaccess
+!/app/.htaccess
 
 # Logs
 *.log

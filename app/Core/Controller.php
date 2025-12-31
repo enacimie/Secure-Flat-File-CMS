@@ -496,6 +496,62 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
         View::render('inbox', ['messages' => $msgs, 'csrf' => Security::generateCsrfToken()], $this->config);
     }
 
+    public function search()
+    {
+        $q = trim($_GET['q'] ?? '');
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 10;
+        
+        $results = [];
+        if ($q) {
+            $all = Indexer::all();
+            $results = array_filter($all, function($item) use ($q) {
+                if (($item['status'] ?? 'published') !== 'published') return false;
+                // Search in title, file slug, or tags
+                return stripos($item['title'], $q) !== false || 
+                       stripos($item['file'], $q) !== false ||
+                       in_array(strtolower($q), array_map('strtolower', $item['tags'] ?? []));
+            });
+        }
+        
+        // Pagination
+        $total = count($results);
+        $totalPages = ceil($total / $perPage);
+        $results = array_slice($results, ($page - 1) * $perPage, $perPage);
+
+        View::render('search', [
+            'title' => "Search: " . htmlspecialchars($q),
+            'query' => $q,
+            'results' => $results,
+            'pagination' => ['current' => $page, 'total' => $totalPages],
+            'site' => $this->config,
+            'is_admin' => Auth::check()
+        ], $this->config);
+    }
+
+    public function mediaLibrary()
+    {
+        $this->requireAuth();
+        $files = Store::list('media');
+        $images = [];
+        foreach($files as $f) {
+            if ($f === '.gitkeep') continue;
+            // Get size safely
+            $path = __DIR__ . '/../../storage/media/' . $f;
+            $size = file_exists($path) ? round(filesize($path) / 1024, 1) . ' KB' : '0 KB';
+            
+            $images[] = [
+                'name' => $f,
+                'url' => '/media/' . $f,
+                'size' => $size
+            ];
+        }
+        View::render('media_library', [
+            'images' => $images,
+            'csrf' => Security::generateCsrfToken()
+        ], $this->config);
+    }
+
     public function sitemap()
     {
         header("Content-Type: application/xml; charset=utf-8");
