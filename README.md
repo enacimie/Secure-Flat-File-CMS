@@ -109,6 +109,12 @@ server {
 }
 ```
 
+### Shared Hosting (FTP/cPanel)
+If you cannot change the Document Root (common in cheap hosting where `public_html` is fixed):
+1.  Upload **all files** to your `public_html` folder.
+2.  The system includes a root `.htaccess` file that automatically redirects traffic to the `public/` folder.
+3.  Sensitive folders (`app/`, `storage/`) are protected by their own `.htaccess` files (`Deny from all`).
+
 ---
 
 ## 📖 Usage Guide
