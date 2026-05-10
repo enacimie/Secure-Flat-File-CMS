@@ -1,0 +1,70 @@
+name: Build Production Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: openssl, json, mbstring, fileinfo
+          coverage: none
+
+      - name: Install Composer dependencies (production only)
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Remove development files
+        run: |
+          rm -rf .git/
+          rm -rf .github/
+          rm -rf tests/
+          rm -rf bin/
+          rm -f debug_index.php
+          rm -f .phpunit.result.cache
+          rm -f phpunit.xml
+          rm -f composer.json
+          rm -f composer.lock
+          rm -f benchmark.php
+          find . -name ".gitignore" -delete
+          find . -name ".htaccess" -path "*/storage/*" -delete
+
+      - name: Get version tag
+        id: version
+        run: echo "version=$(date +'%Y.%m.%d')-$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Create ZIP archive
+        run: zip -r secure-flat-file-cms-${{ steps.version.outputs.version }}.zip . -x "*.DS_Store"
+
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: production-${{ steps.version.outputs.version }}
+          name: Production Build ${{ steps.version.outputs.version }}
+          body: |
+            ## Production Ready ZIP
+            
+            This build includes all dependencies pre-installed.
+            
+            ### Installation
+            1. Download and extract `secure-flat-file-cms-*.zip`
+            2. Upload to your server
+            3. Point your web server to the `public/` directory
+            4. Visit your site and follow the installer
+            
+            **Requirements:** PHP 8.1+, Apache/Nginx with mod_rewrite
+          files: secure-flat-file-cms-${{ steps.version.outputs.version }}.zip
+          draft: false
+          prerelease: false
+          overwrite: true
