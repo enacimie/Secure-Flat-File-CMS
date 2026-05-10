@@ -12,25 +12,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $_POST['user'] ?? 'admin';
     $pass = $_POST['pass'] ?? 'admin';
 
-    // 1. Generate Key
+    // 1. Generate Key (AES-256 requires 32 bytes raw)
     try {
-        $key = bin2hex(openssl_random_pseudo_bytes(16)); // 32 chars hex = 16 bytes? No, AES-256 needs 32 bytes key.
-        // wait, openssl_encrypt with AES-256-CBC needs 32 bytes string?
-        // openssl_random_pseudo_bytes(32) gives 32 raw bytes.
-        // Our Security class loads the file which returns a string.
-        // Let's match the original seed command: openssl rand -hex 16 => 32 chars.
-        // Actually AES-256 key length is 32 bytes. 
-        // If we use a hex string as key, it depends if we pack it or use it as password.
-        // Looking at Security.php: openssl_encrypt($data, 'AES-256-CBC', $key, ...)
-        // If $key is shorter, it pads? If longer?
-        // Standard is 32 bytes raw. 
-        // Let's generate a robust random string.
-        $key = bin2hex(random_bytes(16)); // 32 chars
+        $key = random_bytes(32); // 256 bits raw binary
     } catch (Exception $e) {
         die("Error generating key: " . $e->getMessage());
     }
 
-    $keyContent = "<?php return '$key';";
+    // Store key as raw binary in a PHP file that returns it
+    $keyContent = "<?php return " . var_export($key, true) . ";";
     if (file_put_contents(__DIR__ . '/../key.php', $keyContent) === false) {
         $error = "Could not write key.php. Check permissions.";
     } else {
@@ -47,11 +37,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!is_dir(__DIR__ . '/' . $dir)) mkdir(__DIR__ . '/' . $dir, 0755, true);
         }
 
-        // 3. Helper for Encryption (Inline to avoid dependencies)
+        // 3. Helper for Encryption (AES-256-GCM to match Security.php)
         function install_encrypt($data, $k) {
-            $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('AES-256-CBC'));
-            $encrypted = openssl_encrypt($data, 'AES-256-CBC', $k, 0, $iv);
-            return base64_encode($iv . $encrypted);
+            $ivLength = openssl_cipher_iv_length('AES-256-GCM');
+            $iv = openssl_random_pseudo_bytes($ivLength);
+            $tag = '';
+            $encrypted = openssl_encrypt($data, 'AES-256-GCM', $k, 0, $iv, $tag);
+            // Format: IV (12) . Tag (16) . Ciphertext, then base64 encode
+            return 'GCM|' . base64_encode($iv . $tag . $encrypted);
         }
 
         // 4. Create Config

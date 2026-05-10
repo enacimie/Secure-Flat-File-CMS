@@ -36,7 +36,7 @@ class View
             // Simple HTML Minification (Remove space between tags)
             echo preg_replace('/>\s+</', '><', $content);
         } else {
-            die("Critical Error: View '$view' not found. Checked theme '$currentTheme' and '$defaultTheme'.");
+            throw new \RuntimeException("View '$view' not found in theme '$currentTheme' or '$defaultTheme'.");
         }
     }
 }

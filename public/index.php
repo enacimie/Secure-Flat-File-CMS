@@ -1,4 +1,10 @@
 <?php
+// Session Hardening
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'Strict');
+ini_set('session.use_strict_mode', 1);
+ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 1 : 0);
+
 // Start session globally if not started
 if (session_status() === PHP_SESSION_NONE) session_start();
 

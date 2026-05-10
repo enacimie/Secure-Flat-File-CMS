@@ -2,7 +2,7 @@
 
 namespace App\Core;
 
-use Parsedown;
+use League\CommonMark\CommonMarkConverter;
 use DateTime;
 
 class Controller
@@ -22,7 +22,11 @@ class Controller
 
     public function page($slug)
     {
-        if (preg_match('/\.\./', $slug)) die('Invalid path');
+        if (preg_match('/\.\./', $slug)) {
+            http_response_code(400);
+            $this->render404();
+            return;
+        }
         
         // --- Cache Layer ---
         $cacheDir = __DIR__ . '/../../storage/cache/public';
@@ -60,7 +64,7 @@ class Controller
 
         $mdContent = Hook::call('content_raw', $mdContent);
         $processedContent = Shortcode::parse($mdContent);
-        $htmlContent = (new Parsedown())->text($processedContent);
+        $htmlContent = (string)(new CommonMarkConverter(['html_input' => 'allow', 'allow_unsafe_links' => false]))->convert($processedContent);
         $finalContent = Hook::call('content_html', $htmlContent);
 
         // Inject SEO Meta Tags via Hook 'head'
@@ -103,7 +107,11 @@ class Controller
     {
         // Handle 2FA Verification
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['2fa_code'])) {
-            if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF Error");
+            if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Invalid CSRF token']);
+                return;
+            }
             
             if (empty($_SESSION['2fa_pending_user'])) {
                 header('Location: /admin');
@@ -131,7 +139,11 @@ class Controller
 
         // Handle Login POST
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user'])) {
-            if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF Error");
+            if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Invalid CSRF token']);
+                return;
+            }
             
             Security::checkRateLimit($_SERVER['REMOTE_ADDR']);
 
@@ -207,8 +219,16 @@ class Controller
     public function create()
     {
         $this->requireAuth();
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Method");
-        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF");
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            return;
+        }
+        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Invalid CSRF token']);
+            return;
+        }
 
         $title = trim($_POST['title']);
         $slug = trim($_POST['slug'] ?: strtolower(preg_replace('/[^a-z0-9\-_]+/', '-', $title)));
@@ -273,7 +293,11 @@ Start writing...";
     public function save()
     {
         $this->requireAuth();
-        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF");
+        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Invalid CSRF token']);
+            return;
+        }
 
         $file = $_POST['file'];
         $type = $_POST['type'];
@@ -324,11 +348,23 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
     public function delete()
     {
         $this->requireAuth();
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Method");
-        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF");
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            return;
+        }
+        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Invalid CSRF token']);
+            return;
+        }
         
         $file = $_POST['file'];
-        if (in_array($file, ['home.md', 'site.json'])) die("Protected");
+        if (in_array($file, ['home.md', 'site.json'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Protected file']);
+            return;
+        }
         
         if (Store::delete($file, $_POST['type'])) {
             if ($_POST['type'] === 'content') Indexer::delete($file);
@@ -344,14 +380,46 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
     public function upload()
     {
         $this->requireAuth();
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Method");
-        if (!isset($_FILES['image'])) { http_response_code(400); die(json_encode(['error' => 'No image'])); }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            return;
+        }
+        if (!isset($_FILES['image'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'No image uploaded']);
+            return;
+        }
 
         $file = $_FILES['image'];
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) { http_response_code(400); die(json_encode(['error' => 'Invalid type'])); }
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Upload failed']);
+            return;
+        }
 
-        $filename = uniqid('img_') . '.' . $ext;
+        // Validate MIME type (not just extension)
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($mimeType, $allowedMimes)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid file type']);
+            return;
+        }
+
+        // Sanitize extension based on actual MIME
+        $mimeToExt = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp'
+        ];
+        $ext = $mimeToExt[$mimeType];
+
+        // Secure random filename
+        $filename = bin2hex(random_bytes(16)) . '.' . $ext;
+        
         Store::save($filename, file_get_contents($file['tmp_name']), 'media');
         echo json_encode(['imageUrl' => '/media/' . $filename]);
     }
@@ -360,7 +428,11 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
     {
         $filename = basename($filename);
         $content = Store::load($filename, 'media');
-        if (!$content) { http_response_code(404); die("Not found"); }
+        if (!$content) {
+            http_response_code(404);
+            echo "Not found";
+            return;
+        }
 
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         $types = ['jpg'=>'image/jpeg','jpeg'=>'image/jpeg','png'=>'image/png','gif'=>'image/gif','webp'=>'image/webp'];
@@ -382,7 +454,7 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
         if (is_dir($historyDir)) {
             foreach (scandir($historyDir) as $f) {
                 if (strpos($f, $file . '.') === 0 && str_ends_with($f, '.bak')) {
-                    if (preg_match('/\.($d{8}_$d{6})\.bak$/', $f, $matches)) {
+                    if (preg_match('/\.(\d{8}_\d{6})\.bak$/', $f, $matches)) {
                         $tsStr = $matches[1];
                         $date = DateTime::createFromFormat('Ymd_His', $tsStr);
                         $backups[] = ['file' => $f, 'date' => $date ? $date->format('M j, Y H:i:s') : $tsStr, 'raw_ts' => $tsStr];
@@ -397,14 +469,26 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
     public function restore()
     {
         $this->requireAuth();
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Method");
-        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF");
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            return;
+        }
+        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Invalid CSRF token']);
+            return;
+        }
 
         $versionFile = $_POST['version_file'];
         $targetFile = $_POST['target_file'];
         $type = $_POST['type'];
         $historyPath = __DIR__ . '/../../storage/history/' . $versionFile;
-        if (!file_exists($historyPath) || strpos($targetFile, '..') !== false) die("Error");
+        if (!file_exists($historyPath) || strpos($targetFile, '..') !== false) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid request']);
+            return;
+        }
 
         if (copy($historyPath, __DIR__ . '/../../storage/' . $type . '/' . $targetFile)) {
             // Re-index if content
@@ -435,7 +519,7 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
             $meta['id'] = basename($dir);
             // Load README if exists
             if (file_exists($dir . '/README.md')) {
-                $meta['readme'] = (new Parsedown())->text(file_get_contents($dir . '/README.md'));
+                $meta['readme'] = (string)(new CommonMarkConverter(['html_input' => 'allow', 'allow_unsafe_links' => false]))->convert(file_get_contents($dir . '/README.md'));
             } else {
                 $meta['readme'] = null;
             }
@@ -458,25 +542,58 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
 
     public function togglePlugin() {
         $this->requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            return;
+        }
+        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Invalid CSRF token']);
+            return;
+        }
+
         $active = $this->config['active_plugins'] ?? [];
-        $id = $_POST['plugin_id'];
-        if ($_POST['action'] === 'activate' && !in_array($id, $active)) $active[] = $id;
-        if ($_POST['action'] === 'deactivate') $active = array_diff($active, [$id]);
-        $this->config['active_plugins'] = array_values($active);
+        $id = $_POST['plugin_id'] ?? '';
+        if (!empty($id)) {
+            if ($_POST['action'] === 'activate' && !in_array($id, $active)) $active[] = $id;
+            if ($_POST['action'] === 'deactivate') $active = array_diff($active, [$id]);
+            $this->config['active_plugins'] = array_values($active);
+        }
         Store::save('site.json', json_encode($this->config, JSON_PRETTY_PRINT), 'config');
         header('Location: /admin/extensions');
+        exit;
     }
 
     public function setTheme() {
         $this->requireAuth();
-        $this->config['theme'] = $_POST['theme_id'];
-        Store::save('site.json', json_encode($this->config, JSON_PRETTY_PRINT), 'config');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            return;
+        }
+        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Invalid CSRF token']);
+            return;
+        }
+
+        $themeId = $_POST['theme_id'] ?? '';
+        if (!empty($themeId) && is_dir(__DIR__ . '/../../themes/' . $themeId)) {
+            $this->config['theme'] = $themeId;
+            Store::save('site.json', json_encode($this->config, JSON_PRETTY_PRINT), 'config');
+        }
         header('Location: /admin/extensions');
+        exit;
     }
 
     public function submitContact()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') die("Method");
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            return;
+        }
         
         // Anti-Spam: Honeypot
         if (!empty($_POST['website_url'])) {
@@ -484,7 +601,11 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
             exit;
         }
 
-        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) die("CSRF Error");
+        if (!Security::validateCsrfToken($_POST['csrf'] ?? '')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Invalid CSRF token']);
+            return;
+        }
         
         // Dynamic Data Capture
         $data = $_POST;
@@ -637,7 +758,7 @@ title: \"$title\"\nstatus: {$_POST['status']}\ndate: {$_POST['date']}
         $mdContent = $parsed['content'];
         $mdContent = Hook::call('content_raw', $mdContent);
         $processedContent = Shortcode::parse($mdContent);
-        $htmlContent = (new Parsedown())->text($processedContent);
+        $htmlContent = (string)(new CommonMarkConverter(['html_input' => 'allow', 'allow_unsafe_links' => false]))->convert($processedContent);
         $finalContent = Hook::call('content_html', $htmlContent);
 
         echo json_encode([

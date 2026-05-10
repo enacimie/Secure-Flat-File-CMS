@@ -94,8 +94,9 @@ class Security
         }
 
         if ($attempts >= $limit) {
-            header("HTTP/1.1 429 Too Many Requests");
-            die("Too many login attempts. Please try again in 15 minutes.");
+            http_response_code(429);
+            echo "Too many login attempts. Please try again in 15 minutes.";
+            exit;
         }
 
         // Increment (caller must call saveRateLimit if auth fails, but simply incrementing on check is safer/easier for strict limiting)

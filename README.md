@@ -17,17 +17,17 @@ A modern, lightweight, and **fully encrypted** Content Management System (CMS) b
 *   **⚡ High Performance:**
     *   **Encrypted Index:** O(1) lookups using `index.json`.
     *   **Output Caching:** Public pages are cached as static HTML to bypass decryption on subsequent hits.
-    *   **File Locking:** Atomic writes (ACID-compliant) to prevent data corruption.
+    *   **HTML Minification:** Output is compressed on-the-fly.
 *   **🔌 Headless API:** Consumable JSON API (`/api/content/{slug}`) to use the CMS as a backend for React, Vue, or Mobile apps.
 *   **🎨 Professional Themes:** Includes 6 high-quality themes (`Default`, `Nexus`, `Zenith`, `Vanguard`, `Lumina`, `Essence`) covering Corporate, Editorial, Magazine, and Portfolio styles.
 *   **🧩 Extensible:**
     *   **Plugin System:** Hook-based architecture.
+    *   **Form Builder:** Create dynamic forms with Anti-Spam protection.
     *   **Shortcode UI:** Built-in plugin for rich components (Alerts, Buttons, Pricing Tables, etc.).
-    *   **Documentation Viewer:** View plugin details directly in the admin panel.
 *   **📝 Hybrid Editor:** Write in **Markdown** or use the **Visual WYSIWYG Editor** (Toast UI).
 *   **🏷️ Taxonomies:** Native support for `tags` and `category` in Markdown frontmatter.
 *   **🕰️ Version Control:** Automatic history tracking for every file change with a visual **Restore** interface.
-*   **🔍 SEO Ready:** Auto-generated `sitemap.xml`, Open Graph meta tags, and internal search.
+*   **🔍 SEO Ready:** Auto-generated `sitemap.xml`, `robots.txt`, and Open Graph meta tags.
 
 ## 🛠️ Requirements
 
@@ -166,6 +166,36 @@ Enable the **Shortcode UI** plugin to use these components in your Markdown:
 | **Card** | `[card title="Title"]Content[/card]` |
 | **YouTube** | `[youtube id="VIDEO_ID"]` |
 | **Stats** | `[stat value="100%" label="Uptime"]` |
+| **Form** | `[form]...[/form]` (See Form Builder below) |
+
+### 📝 Form Builder
+Create dynamic forms directly in Markdown. Submissions are stored securely in `storage/messages`.
+
+```markdown
+[form]
+  [input type="text" name="name" label="Your Name" required="true"]
+  [input type="email" name="email" label="Email"]
+  [select name="topic" options="Support,Sales"]
+  [textarea name="message" label="Message"]
+  [submit label="Send"]
+[/form]
+```
+
+## 💻 Developer Tools
+
+### CLI Console
+Use the built-in CLI for emergency tasks:
+```bash
+php bin/cms cache:clear          # Clear public HTML cache
+php bin/cms user:reset <pass>    # Reset admin password
+php bin/cms security:disable-2fa # Disable 2FA if locked out
+```
+
+### Running Tests
+To ensure system integrity (especially encryption wrappers):
+```bash
+vendor/bin/phpunit
+```
 
 ## 📂 Project Structure
 

@@ -1,35 +1,24 @@
-# Release Notes - v1.0.0
+# Release Notes - v1.3.0 (Excellence Pack)
 
-This release marks a significant milestone for the Secure Flat-File CMS, introducing enterprise-grade features and professional UI options.
+This release finalizes the Core features, focusing on Security, SEO, and Developer Experience.
 
 ## 🌟 New Features
 
-### Security & Stability
-*   **Two-Factor Authentication (2FA):** Native TOTP implementation (RFC 6238). QR codes are generated locally in the browser for maximum security (zero-knowledge).
-*   **File Locking (flock):** All file write operations now use exclusive locks to prevent race conditions and data corruption.
-*   **Encrypted Indexing:** Taxonomies (`tags`, `category`) are now indexed for faster lookups.
+### 🛡️ Security & Enterprise
+*   **Dynamic Form Builder:** Create complex forms (Contact, Surveys) directly in Markdown using Shortcodes.
+*   **Anti-Spam (Honeypot):** Invisible protection against bots in all forms.
+*   **Installer Self-Destruct:** The installation script automatically deletes itself after success.
+*   **CLI Tool (`bin/cms`):** Command-line interface for emergency tasks (reset password, clear cache).
 
-### Performance
-*   **Smart Caching:** Public pages are cached as static HTML, bypassing decryption and Markdown parsing on subsequent visits.
-*   **Optimized Router:** New `public/router.php` for seamless local development.
+### 🚀 SEO & Performance
+*   **Dynamic Sitemap & Robots:** Auto-generated `sitemap.xml` (with images) and `robots.txt`.
+*   **HTML Minification:** Output is automatically minified to reduce bandwidth usage.
 
-### Developer Experience
-*   **Headless API:** New endpoint `GET /api/content/{slug}` returns clean JSON for decoupling the backend.
-*   **Plugin Documentation:** The Extensions manager now renders `README.md` files from plugins in a modal.
+### 🧪 Quality Assurance
+*   **PHPUnit Suite:** Full unit testing infrastructure included.
+*   **CI/CD:** GitHub Actions workflow configured for automated testing.
 
-### Design & Content
-*   **Professional Themes:** Added 5 new high-quality themes:
-    *   **Nexus:** Corporate / SaaS (Inter font).
-    *   **Zenith:** Editorial / Minimalist (Merriweather font).
-    *   **Vanguard:** Magazine / News.
-    *   **Lumina:** Dark Mode / Portfolio.
-    *   **Essence:** Lifestyle / eCommerce.
-*   **Shortcode UI Plugin:** A comprehensive set of components for Markdown:
-    *   Grids, Alerts, Buttons, Cards, Badges.
-    *   YouTube embeds, Hero banners, Accordions.
-    *   Pricing Tables, Stats, User Testimonials.
-
-## 🔧 Upgrading
-No database migration is required. Just pull the changes and run `composer install` if dependencies changed (none added in this release).
+## 📦 Upgrading
+Run `composer update` to install development dependencies (PHPUnit).
 
 **Author:** Eduardo Nacimiento-García <enacimie@ull.edu.es>
